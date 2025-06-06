@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculadora de Horas Extra</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Colores para el título */
+      --title-blue: #0056b3;
+      --title-blue-dark: #004a99;
+      
+      /* Paleta de colores suaves para el resto de la UI */
+      --soft-blue: #5D9CEC;
+      --soft-blue-dark: #4A89DC;
+      --light-gray: #f8f9fa;
+      --border-color: #dee2e6;
+      --text-dark: #343a40;
+      --table-header-bg: #eef5ff;
+    }
+    body {
+      background-color: var(--light-gray);
+      font-family: 'Poppins', sans-serif;
+    }
+    .main-container {
+      max-width: 960px;
+      margin: 2rem auto;
+      padding: 2.5rem;
+      background-color: #ffffff;
+      border-radius: 1rem;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    }
+    .header-title {
+      font-weight: 700;
+      background: -webkit-linear-gradient(45deg, var(--title-blue), var(--title-blue-dark));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .btn-custom-blue {
+      background-color: var(--soft-blue);
+      border-color: var(--soft-blue);
+      color: #fff;
+      transition: all 0.3s ease;
+      font-weight: 600;
+    }
+    .btn-custom-blue:hover {
+      background-color: var(--soft-blue-dark);
+      border-color: var(--soft-blue-dark);
+      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .card {
+      border: 1px solid var(--border-color);
+      border-radius: 0.75rem;
+    }
+    .thead-custom th {
+      background-color: var(--table-header-bg);
+      color: var(--soft-blue-dark);
+      font-weight: 600;
+      border-bottom: 2px solid var(--soft-blue);
+    }
+    /* Reglas de estilo para filas de la tabla */
+    .table-striped > tbody > tr:not(.table-warning):not(.table-danger):not(.table-info):nth-of-type(odd) > * {
+      background-color: rgba(93, 156, 236, 0.05);
+    }
+    tr.table-danger, tr.table-danger > td {
+      background-color: #f8d7da !important;
+    }
+    tr.table-warning, tr.table-warning > td {
+      background-color: #fff3cd !important;
+    }
+    tr.table-info, tr.table-info > td {
+        background-color: #cff4fc !important;
+    }
+    .badge-subtle {
+      background-color: var(--light-gray);
+      color: var(--text-dark);
+      font-size: 0.9em;
+      padding: 0.5em 0.8em;
+      font-weight: 600;
+      border: 1px solid var(--border-color);
+      border-radius: 0.25rem;
+    }
+    .text-custom-blue {
+       color: var(--soft-blue);
+    }
+  </style>
+</head>
+<body>
+  
+  <div class="main-container">
+
+    <div class="text-center mb-5">
+      <h1 class="header-title">Calculadora de Horas Extra</h1>
+      <p class="text-muted fs-5">Sube tu planilla de horarios en formato PDF para un cálculo automático.</p>
+    </div>
+
+    <div class="card shadow-sm mb-5">
+      <div class="card-body p-4">
+        <form action="/procesar" method="post" enctype="multipart/form-data">
+          <div class="mb-3">
+            <label for="fileInput" class="form-label fw-medium">Selecciona tu archivo PDF</label>
+            <input type="file" name="archivo_pdf" accept=".pdf" required class="form-control" id="fileInput">
+          </div>
+          <button type="submit" class="btn btn-custom-blue w-100 py-2 fs-5">
+            <i class="bi bi-upload me-2"></i>Procesar y Calcular
+          </button>
+        </form>
+      </div>
+    </div>
+
+    {% if error %}
+      <div class="alert alert-danger mt-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}
+      </div>
+    {% endif %}
+
+    {% if filas %}
+    <div class="card shadow-sm">
+      <div class="card-header bg-light py-3 text-center">
+        <h3 class="mb-0">Resultados del Cálculo</h3>
+      </div>
+      <div class="card-body p-4">
+        <div class="d-flex flex-wrap gap-2 mb-4">
+          <button class="btn btn-success" type="button" data-bs-toggle="collapse" data-bs-target="#tablaResultados" aria-expanded="true" aria-controls="tablaResultados">
+            <i class="bi bi-eye me-2"></i>Ver/Ocultar Horarios
+          </button>
+          <button id="copiarBtn" class="btn btn-secondary">
+            <i class="bi bi-clipboard-check me-2"></i>Copiar Horarios para Excel
+          </button>
+        </div>
+
+        <div class="collapse show" id="tablaResultados">
+          <div class="table-responsive">
+            <table class="table table-bordered table-striped table-hover text-center">
+              <thead class="thead-custom">
+                <tr>
+                  <th rowspan="3" class="align-middle">Fecha</th>
+                  <th rowspan="3" class="align-middle">Día</th>
+                  <th colspan="2">HORARIO PROGRAMADO</th>
+                  <th colspan="6">TIEMPO EXTRA REALIZADO</th>
+                </tr>
+                <tr>
+                  <th rowspan="2" class="align-middle">ENTRADA</th>
+                  <th rowspan="2" class="align-middle">SALIDA</th>
+                  <th colspan="2">DIURNO</th>
+                  <th colspan="2">NOCTURNO</th>
+                  <th colspan="2">FESTIVO</th>
+                </tr>
+                <tr>
+                  <th>DESDE</th><th>HASTA</th>
+                  <th>DESDE</th><th>HASTA</th>
+                  <th>DESDE</th><th>HASTA</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for fila in filas %}
+                <tr class="
+                  {% if fila.requiere_justificacion %}table-warning{% endif %}
+                  {% if fila.es_inasistencia %}table-danger{% endif %}
+                  {% if fila.es_feriado %}table-info{% endif %}
+                ">
+                  <td>{{ fila.fecha }}</td>
+                  <td>{{ fila.dia_semana }}</td>
+                  <td><span class="badge-subtle">{{ fila.programado.entrada }}</span></td>
+                  <td><span class="badge-subtle">{{ fila.programado.salida }}</span></td>
+                  <td>{{ fila.extra_diurno.desde or '00:00' }}</td>
+                  <td>{{ fila.extra_diurno.hasta or '00:00' }}</td>
+                  <td>{{ fila.extra_nocturno.desde or '00:00' }}</td>
+                  <td>{{ fila.extra_nocturno.hasta or '00:00' }}</td>
+                  <td>{{ fila.extra_festivo.desde or '00:00' }}</td>
+                  <td>{{ fila.extra_festivo.hasta or '00:00' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <hr class="my-4">
+          <h4 class="mb-3 text-center">Resumen de Horas Extra</h4>
+          <div class="row text-center">
+            <div class="col-md-4 mb-3">
+              <div class="p-3 bg-light rounded-3">
+                <h6 class="text-muted">TOTAL DIURNO</h6>
+                <p class="fs-4 fw-bold text-custom-blue mb-0">{{ totales.diurno }}</p>
+              </div>
+            </div>
+            <div class="col-md-4 mb-3">
+              <div class="p-3 bg-light rounded-3">
+                <h6 class="text-muted">TOTAL NOCTURNO</h6>
+                <p class="fs-4 fw-bold text-custom-blue mb-0">{{ totales.nocturno }}</p>
+              </div>
+            </div>
+            <div class="col-md-4 mb-3">
+              <div class="p-3 bg-light rounded-3">
+                <h6 class="text-muted">TOTAL FESTIVO</h6>
+                <p class="fs-4 fw-bold text-custom-blue mb-0">{{ totales.festivo }}</p>
+              </div>
+            </div>
+          </div>
+          
+          {% if atrasos_salidas %}
+          <hr class="my-4">
+          <div class="alert alert-warning" role="alert">
+              <h5 class="alert-heading"><i class="bi bi-clock-history me-2"></i>Atención: Atrasos y Salidas Antes</h5>
+              <p>Los siguientes días presentan registros que deben ser justificados:</p>
+              <ul class="mb-0">
+                  {% for incidencia in atrasos_salidas %}
+                      <li><strong>{{ incidencia.fecha }}:</strong> {{ incidencia.detalle }}</li>
+                  {% endfor %}
+              </ul>
+          </div>
+          {% endif %}
+
+          {% if inasistencias %}
+          <hr class="my-4">
+          <div class="alert alert-danger" role="alert">
+              <h5 class="alert-heading"><i class="bi bi-calendar-x-fill me-2"></i>Atención: Inasistencias Injustificadas</h5>
+              <p>Los siguientes días no tienen registro de horario y se consideran inasistencias que deben ser justificadas:</p>
+              <ul class="mb-0">
+                  {% for incidencia in inasistencias %}
+                      <li><strong>{{ incidencia.fecha }}:</strong> {{ incidencia.detalle }}</li>
+                  {% endfor %}
+              </ul>
+              <small class="d-block mt-3">* Nota: Esta verificación no aplica para días que son feriados legales.</small>
+          </div>
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
+  {% if filas %}
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const copiarBtn = document.getElementById('copiarBtn');
+      if (copiarBtn) {
+        copiarBtn.addEventListener('click', () => {
+            const tableRows = document.querySelectorAll("#tablaResultados tbody tr");
+            const rowsAsStrings = Array.from(tableRows).map(row => {
+                const cells = row.querySelectorAll('td');
+                // Se ajusta para omitir las primeras dos columnas (Fecha y Día)
+                const rowData = Array.from(cells).slice(2).map(cell => cell.textContent.trim());
+                return rowData.join('\t');
+            });
+            const csvContent = rowsAsStrings.join('\n');
+            navigator.clipboard.writeText(csvContent).then(() => {
+                const originalText = copiarBtn.innerHTML;
+                copiarBtn.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>¡Copiado!';
+                setTimeout(() => { copiarBtn.innerHTML = originalText; }, 2000);
+            }).catch(err => {
+                console.error('Error al copiar: ', err);
+                alert('No se pudo copiar al portapapeles.');
+            });
+        });
+      }
+    });
+  </script>
+  {% endif %}
+
+</body>
+</html>
+
+
+
