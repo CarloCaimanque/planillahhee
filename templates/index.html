@@ -228,7 +228,8 @@
                       <li><strong>{{ incidencia.fecha }}:</strong> {{ incidencia.detalle }}</li>
                   {% endfor %}
               </ul>
-              <small class="d-block mt-3">* Nota: Esta verificación no aplica para días que son feriados legales.</small>
+              {# Modificado: Se cambia el texto de la nota al pie #}
+              <small class="d-block mt-3">* Nota: Esta justificación no aplica para días que son feriados legales o existe cometido funcional.</small>
           </div>
           {% endif %}
 
