@@ -112,8 +112,21 @@ def procesar_registros(registros_pdf):
                                      entrada_prog_limpia == "0000" and salida_prog_limpia == "0000" and
                                      entrada_real_limpia == "0000" and salida_real_limpia == "0000")
 
-            if es_inasistencia_ceros:
-                inasistencias_injustificadas.append({"fecha": fecha_str, "detalle": "Inasistencia (campos en 00:00)"})
+            # NUEVA LÓGICA PARA HORARIOS PROGRAMADOS ESPECÍFICOS PARA INASISTENCIA
+            es_horario_programado_injustificado = (
+                dia_semana_index < 5 and not es_feriado and
+                (
+                    (reg["Entrada Programada"] == "07:30" and reg["Salida Programada"] == "15:30") or
+                    (reg["Entrada Programada"] == "07:30" and reg["Salida Programada"] == "16:30")
+                )
+            )
+
+            if es_inasistencia_ceros or es_horario_programado_injustificado:
+                detalle_inasistencia = "Inasistencia (campos en 00:00)"
+                if es_horario_programado_injustificado:
+                    # Modificado: Simplificamos el detalle para que diga solo "Inasistencia"
+                    detalle_inasistencia = "Inasistencia" 
+                inasistencias_injustificadas.append({"fecha": fecha_str, "detalle": detalle_inasistencia})
                 calculo = crear_fila_incidencia(fecha_str, dia_semana_nombre, es_inasistencia=True)
             else:
                 es_atraso = (entrada_prog_limpia == "0930")
